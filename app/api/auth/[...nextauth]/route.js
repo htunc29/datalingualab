@@ -1,99 +1,56 @@
 import NextAuth from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-import GoogleProvider from "next-auth/providers/google"; // Google provider'ı ekliyoruz
-import { jwtDecode } from "jwt-decode";
-import axios from "axios";
-
-const handler = NextAuth({
-  providers: [
-    CredentialsProvider({
-      name: "Giriş",
-      credentials: {
-        email: { label: "Email", type: "text" },
-        password: { label: "Şifre", type: "password" },
-      },
-      async authorize(credentials) {
-        try {
-          const { data } = await axios.post(
-            "http://localhost:5121/api/User/login",
-            {
-              email: credentials.email,
-              password: credentials.password,
+import CredentialsProvider from 'next-auth/providers/credentials'
+import clientPromise from "@/lib/mongodb";  
+import { compare } from "bcryptjs";
+import GoogleProvider from 'next-auth/providers/google';
+import { ObjectId } from "mongodb";
+const handler=NextAuth({
+    providers:[
+        CredentialsProvider({
+            name:"Credentials",
+            credentials:{
+                email:{label:"Email",type:"text"},
+                password:{label:"Password",type:"password"},
             },
-            {
-              headers: { "Content-Type": "application/json" },
+            async authorize(credentials){
+                const client=await clientPromise;
+                const db=client.db("DataLinguaLab")
+                const user=await db.collection("users").findOne({email:credentials.email})
+                if(!user) throw new Error("Kullanıcı Bulunamadı")
+                const isValid=await compare(credentials.password,user.password)
+                if(!isValid) throw new Error("Şifre Yanlış")
+                return{
+                    id:user._id.toString(),
+                    email:user.email,
+                    name:user.name
+                }
             }
-          );
-      
-          console.log("API Response Data: ", data);  // API'den gelen token'ı logla
-      
-          if (!data) {
-            console.log("Token alınamadı");
-            return null;
-          }
-      
-          const token = data; // Token'ı alıyoruz
-          const decoded = jwtDecode(token); // Token'ı decode et
-      
-          console.log("Decoded Token: ", decoded); // Decode edilmiş token'ı logla
-      
-          if (decoded && decoded.email === credentials.email) {
-            return {
-              id: decoded.sub,
-              email: decoded.email,
-              name: decoded.name || decoded.unique_name,
-              role: decoded.role,
-              token: token,
-            };
-          } else {
-            console.log("Email veya token uyuşmuyor");
-            return null;
-          }
-        } catch (error) {
-          console.error("Giriş hatası:", error.response?.data || error.message);
-          return null;
-        }
-      }
-      
-      
-    }),
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    }),
-  ],
-  pages: {
-    signIn: "/login",
-    error: "/login", // Hata durumunda yönlendirme
-  },
-  session: {
-    strategy: "jwt",
-    maxAge: 24 * 60 * 60, // 1 gün
-  },
-  callbacks: {
-    async jwt({ token, user }) {
-      // Kullanıcı giriş yaptığında
-      if (user) {
-        token.id = user.id;
-        token.role = user.role;
-        token.email = user.email;
-        token.name = user.name;
-        token.accessToken = user.token; // API'den gelen token
-      }
-      return token;
+        }),
+        // Add this to providers array
+        GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET
+        })
+    ],
+    pages:{
+        signIn:"/auth/login",
     },
-    async session({ session, token }) {
-      // Session objesini özelleştiriyoruz
-      session.user.id = token.id;
-      session.user.role = token.role;
-      session.user.name = token.name;
-      session.user.email = token.email;
-      session.accessToken = token.accessToken;
-      return session;
+    session:{
+        strategy:"jwt"
     },
-  },
-  secret: process.env.NEXTAUTH_SECRET,
-  
-});
+    callbacks:{
+        async jwt({ token, user }) {
+            if (user) {
+                token.id = user.id;
+            }
+            return token;
+        },
+        async session({ session, token }) {
+            session.user.id = token.id;
+            return session;
+        }, 
+    },
+    secret:process.env.NEXTAUTH_SECRET
+})
 
 export { handler as GET, handler as POST };

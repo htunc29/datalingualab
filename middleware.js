@@ -1,21 +1,17 @@
-import { NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';  // JWT token'ı almak için yardımcı fonksiyon
-import { NextRequest } from 'next/server';
+import { getToken } from "next-auth/jwt";
+import { NextResponse } from "next/server";
 
 export async function middleware(req) {
-  // JWT token'ı kontrol et
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
-  // Token yoksa, yani kullanıcı giriş yapmamışsa
+  // Eğer token yoksa login sayfasına yolla
   if (!token) {
-    // Oturumu olmayan kullanıcıyı login sayfasına yönlendir
-    return NextResponse.redirect(new URL('/login', req.url));
+    return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  // Eğer token varsa, kullanıcının erişimine izin ver
-  return NextResponse.next();
+  return NextResponse.next(); // her şey tamamsa devam et
 }
-
 export const config = {
-  matcher: ['/about',  '/profile',"/survey"], // Bu sayfalara middleware uygulanacak
-};
+    matcher: ["/home", "/dashboard/:path*"], // 👈 korumak istediğin route'lar
+  };
+  

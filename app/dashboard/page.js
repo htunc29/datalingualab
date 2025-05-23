@@ -1,9 +1,12 @@
+"use client"
 import React from 'react'
 import {RiSurveyLine} from 'react-icons/ri'
 import { FaCheck, FaClock, FaUser, FaUsers } from 'react-icons/fa6'
 import Image from 'next/image'
+import {useSession} from 'next-auth/react'
 import { BarChart } from '@mui/x-charts/BarChart'
 import StatisticCard from '../components/StatisticCard';
+import { HashLoader } from 'react-spinners'
 export default function Dashboard() {
   const exampleData = [
     { name: '1', value: 100 },
@@ -11,8 +14,11 @@ export default function Dashboard() {
     { name: '3', value: 120 },
     { name: '4', value: 150 },
   ];
+    const { data: session, status } = useSession();
+  if(status === "loading") return <div className='h-screen flex justify-center items-center'><HashLoader/></div>
   return (
     <section className='p-4 md:p-5'>
+      <h1 className='my-4 text-2xl font-bold'>Hoşgeldin, {session.user.name}</h1>
       <div className='grid grid-cols-2 md:grid-cols-4 gap-2'>
         <div className='bg-white shadow-sm rounded-sm  gap-2 p-4 '>
           <h3>Toplam Anket</h3>

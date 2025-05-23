@@ -3,12 +3,22 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { MdMenu, MdHome, MdPages, MdAdd, MdClose } from "react-icons/md";
 import { AnimatePresence, motion } from "motion/react";
+import { signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { FaExclamation, FaUser } from "react-icons/fa6";
+import { ClockLoader, HashLoader, PacmanLoader } from "react-spinners";
 
 export default function RootLayout({ children }) {
   const [showMenu, setShowMenu] = useState(false);
   const [showProfile,setShowProfile]=useState(false);
+  const { data: session, status } = useSession();
+  async function  handleLogOut(){
+    signOut({
+        callbackUrl: "/", // Kullanıcı çıkış yaptıktan sonra yönlendirmek istediğiniz sayfa
+      });
+  }
+  if (status === "loading") return (<div className="h-screen flex justify-center items-center"><HashLoader/></div>);
+  if (status === "unauthenticated") return <div>Giriş yapmadın, giriş sayfasına yönlendiriliyorsun...</div>;
 return (
     <div className="grid grid-cols-12 h-screen bg-slate-50 ">
         <AnimatePresence>
@@ -33,7 +43,7 @@ return (
                             </Link>
                         </motion.li>
                         <motion.li whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                            <a href="">
+                            <a href="/dashboard/mysurveys">
                                 <MdPages /> Anketlerim
                             </a>
                         </motion.li>
@@ -73,7 +83,7 @@ return (
                         <Image
                             width={50}
                             height={50}
-                            src={"/logo.png"}
+                            src={session.user.image || "/logo.png"}
                             alt="profil"
                             onClick={()=>setShowProfile(!showProfile)}
                             className="rounded-full cursor-pointer"
@@ -96,14 +106,15 @@ return (
                             <Image 
                                 width={64} 
                                 height={64} 
-                                src="/logo.png" 
+                                src={session.user.image || "/logo.png"}
                                 alt="Profile" 
                                 className="rounded-full border-2 border-white"
                             />
                             <div className="absolute bottom-0 right-0 bg-green-500 h-3 w-3 rounded-full border border-white"></div>
                         </div>
-                        <h3 className="text-white font-medium">Hüseyin Tunç</h3>
-                        <p className="text-blue-100 text-sm">Premium Kullanıcı</p>
+                        <h3 className="text-white font-medium">{session.user.name}</h3>
+                        <p className="text-blue-100 text-sm">{session.user.email}</p>
+                        <p>{session.user.id}</p>
                     </div>
             
                     {/* Profile menu items */}
@@ -129,7 +140,7 @@ return (
             
                     {/* Footer with logout button */}
                     <div className="mt-2 p-3 border-t border-gray-100">
-                        <button className="w-full py-2 bg-red-500 hover:bg-red-600 text-white rounded-md flex items-center justify-center gap-2 transition-colors">
+                        <button onClick={handleLogOut} className="w-full py-2 bg-red-500 hover:bg-red-600 text-white rounded-md flex items-center justify-center gap-2 transition-colors">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V3zm2 12V5h10v10H5z" clipRule="evenodd" />
                                 <path d="M8 7a1 1 0 011-1h2a1 1 0 010 2H9a1 1 0 01-1-1z" />
@@ -141,7 +152,7 @@ return (
             </motion.div>
              )}
          </AnimatePresence>
-            <section className="">{children}</section>
+            <section className="p-4 md:p-6">{children}</section>
         </main>
     </div>
 );

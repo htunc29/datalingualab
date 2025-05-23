@@ -1,33 +1,47 @@
 "use client";
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
+import { toast } from "react-toastify";
+import { set } from "react-hook-form";
+import { HashLoader } from "react-spinners";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error,setError]=useState(null)
-
+  const [loading, setLoading] = useState(false);
   async function handleLogin(e) {
+    setLoading(true);
     e.preventDefault();
-   router.push("/dashboard")
+
+    const res = await signIn("credentials", {
+      redirect: false,
+      email,
+      password,
+    });
+
+    if (res.ok) {
+      toast.success("Giriş başarılı. Hoş geldin!");
+      router.push("/dashboard");
+    } else {
+      setLoading(false)
+      toast.error("Giriş başarısız. Lütfen bilgilerinizi kontrol edin.");
+    }
   }
 
-  const handleGoogleLogin =async (e) => {
+
+  const handleGoogleLogin = async (e) => {
     e.preventDefault();
-    const res = await signIn("google", { redirect: false });
-    
-    // Google giriş işlemi başarılıysa yönlendir
-    if (res?.ok) {
-      router.push("/about");
-    } else {
-    }
+    await signIn("google", { callbackUrl: "/dashboard" });
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+   <>
+   {loading ? <div className="h-screen w-screen flex justify-center items-center"><HashLoader/></div>: <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-md rounded-2xl shadow-xl p-8">
         <div className="flex flex-col items-center mb-8">
           <Image
@@ -72,7 +86,9 @@ export default function LoginPage() {
           >
             Giriş Yap
           </button>
-
+          <div>
+            <p className="text-center">Hesabın yok mu ? Hemen <Link className="text-blue-700 underline" href={"/register"}>Kayıt Ol</Link></p>
+          </div>
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-300"></div>
@@ -93,6 +109,7 @@ export default function LoginPage() {
           </button>
         </form>
       </div>
-    </div>
+    </div>}
+   </>
   );
 }

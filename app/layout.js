@@ -1,13 +1,14 @@
-"use client";
-import { SessionProvider, signOut, useSession } from "next-auth/react";
+"use client"
+import { SessionProvider } from "next-auth/react";
 import { Roboto } from "next/font/google";
-import { useRouter } from "next/navigation";
 import Script from "next/script";
 import "./globals.css";
-
+import { ToastContainer, toast } from 'react-toastify';
+import moment from "moment";
 const roboto = Roboto({ weight: "400", subsets: ["latin"] });
 
 export default function RootLayout({ children }) {
+  moment.locale("tr");
   return (
     <html lang="en">
       <head>
@@ -18,27 +19,15 @@ export default function RootLayout({ children }) {
       />
       </head>
       <body className={`${roboto.className} [&>button]:hover:cursor-pointer` }>
-        <SessionProvider>
-          <AuthContent />
-          {children}
-        </SessionProvider>
+      <SessionProvider>
+        {children}
+        <ToastContainer/>
+      </SessionProvider>
       </body>
     </html>
   );
 }
 
-function AuthContent() {
-  const router = useRouter();
-  const { data: session } = useSession();
 
-  const handleLogout = async () => {
-    await signOut({ redirect: false });
-    router.push("/login");
-  };
 
-  return (
-    session && (
-      <button onClick={handleLogout}>Çıkış Yap</button>
-    )
-  );
-}
+
